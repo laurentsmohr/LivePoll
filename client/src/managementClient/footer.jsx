@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 
 const Footer = (props) => (
@@ -14,10 +13,7 @@ const Footer = (props) => (
       <div className="col-1-of-2">
         <div className="footer__navigation">
           <ul className="footer__list">
-            <li className="footer__item"><a href="#" className="footer__link">Contact us</a></li>
-            <li className="footer__item"><a href="#" className="footer__link">Collaborate</a></li>
-            <li className="footer__item"><a href="#" className="footer__link">Privacy</a></li>
-            <li className="footer__item"><a href="#" className="footer__link">Terms</a></li>
+            <li className="footer__item"><a href="https://github.com/Team-Ravenclaw/LivePoll" className="footer__link">Collaborate</a></li>
           </ul>
         </div>
       </div>

@@ -31,6 +31,13 @@
   transition: 2s;
 }
 
+#polls-container {
+  min-height: 10rem;
+}
+
+// #filtered-polls {
+//   min-height: 10rem;
+// }
 
 .no-polls-message {
   top: 3%;
@@ -39,6 +46,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 1rem 2.5rem;
+  text-align: center;
 }
 
 .input-menu {
@@ -119,7 +127,6 @@
 
 .loading-container {
   position: absolute;
-  top: 40%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -177,12 +184,12 @@ circle {
   position: relative;
   bottom: 0;
   width: 100%;
+  min-height: 10rem;
   overflow-y: auto;
   display: flex;
   flex-wrap: wrap;
   flex-direction: row;
   justify-content: space-evenly;
-  
 }
 
 .dashboard-options {
@@ -232,8 +239,6 @@ circle {
   overflow: hidden;
   
   background: linear-gradient(to right bottom, rgba($grey-light, 0), rgba($grey-light, .1));
-  // background-color: $grey;
-  // background: linear-gradient(to right bottom, rgba($primary-light, .7), rgba($primary-dark, .7)), url("/images/tallymarks.jpg");
   box-shadow: 0 1rem 1.5rem rgba($black, .2);
   }
 
@@ -245,8 +250,18 @@ circle {
     text-shadow: 0 .2rem .5rem rgba($black, .2);
   }
 
+  .add-poll-button {
+    height: 5rem;
+    width: 5rem;
+    border-radius: 50%;
+    color: $primary-dark;
+    font-size: 2.7em;
+    vertical-align: center;
+    text-align: center;
+  }
+
   .questions-box {
-    margin: 1rem 0;
+    margin: 1rem;
     &__question {
       background-image: linear-gradient(to right, $primary, $primary-dark);
       -webkit-background-clip: text;

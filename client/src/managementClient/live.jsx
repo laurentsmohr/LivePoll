@@ -1,5 +1,4 @@
 import React from 'react';
-import { Redirect, Link } from 'react-router-dom';
 import {firepoll, realTimeDB} from '../firepollManagementClient';
 import axios from 'axios';
 import Navbar from './navbar';
@@ -11,26 +10,62 @@ class Live extends React.Component {
       poll: null,
       questions: null,
       closed: false,
-      userCount: 0
+      userCount: 0,
+      results: null,
+      fetchedLive: false
     }
     this.fetchPoll = this.fetchPoll.bind(this);
+    this.getResults = this.getResults.bind(this);
     this.computeTimeRemaining = this.computeTimeRemaining.bind(this);
   }
-
   componentDidMount() {
-    // firepoll.user.get(this.props.match.params.id).then(data => {
-    //   let userCount = 0;
-    //   for (let item of data) {
-    //     if (item) {
-    //       userCount +=1;
-    //     }
-    //   }
-    //   this.setState({
-    //     userCount
-    //   });
-    // }).catch(err => console.error(err))
-    // (this.props.match.params.id).then((data) => {console.log(data)});
     this.fetchPoll();
+  }
+
+  getResults() {
+    if (!this.state.fetchedLive) {
+      for (let question of this.state.questions) {
+        // Replace with firepoll
+        firepoll.listen.results(this.state.poll._id, question._id, (data, question_id) => {
+          
+          let newResults = Object.assign({}, this.state.results);
+
+          for (let result of data) {
+            newResults[result.answer_id] = data;
+          }
+          
+          this.setState({results: newResults}, () => {
+            let total;
+            if (this.state.results) {
+              total = Object.keys(this.state.results).reduce((acc, result) => {
+                if (this.state.results[result][0].question_id === question_id) {
+                  acc = acc + this.state.results[result][0].vote_count;
+                }
+                return acc;
+              }, 0)
+            } else {
+              total = 0;
+            }
+
+            let newQuestions = this.state.questions.slice();
+            for (let question of newQuestions) {
+              if (question._id === question_id) {
+                question.total = total;
+              }
+            }
+            this.setState({
+              questions: newQuestions
+            });
+          });
+
+        });
+
+        this.setState({fetchedLive: true});
+
+      }
+    }
+
+
   }
 
   fetchPoll() {
@@ -48,10 +83,14 @@ class Live extends React.Component {
                   poll: data
                 }, () => {
                   firepoll.get.allQuestionsFromPoll(pollId).then((data) => {
+                    data.sort((a, b) => {
+                      return a.position - b.position;
+                    })
                     this.setState({
                       questions: data
-                    });
-                  }).catch((err) => {console.log(err)});
+                    }, () => this.getResults());
+                  })
+                  // .catch((err) => {console.log(err)});
                 });
               });
           });
@@ -90,22 +129,29 @@ class Live extends React.Component {
   }
 
   close = () => {
-    let poll = this.state.poll;
-    poll.questions = this.state.questions;
-    axios.put(`/polls/close/${poll._id}`, poll)
+    this.setState({closed: true})
+    let pollId = this.props.match.params.id;
+    let poll;
+    axios.get(`/polls/${pollId}`)
     .then(res => {
-      firepoll.close(poll);
-      realTimeDB.ref(`/polls/${poll._id}`).remove()
-      .catch(err => {
-        console.error('deleting poll from realTimeDB', err)
+      poll = res.data;
+      axios.put(`/polls/close/${pollId}`, poll)
+      .then(res => {
+        firepoll.close(poll);
+        realTimeDB.ref(`/polls/${poll._id}`).remove().catch(err => {
+          console.error('deleting poll from realTimeDB', err)
+        })
+      }).then(() => {
+        setTimeout(() => {
+          this.props.history.push('/dashboard');
+        }, 350) 
       })
-      console.log("closed poll ", poll.title);
-      console.log('Saved: ', res.data);
-    }).then(() => {
-      this.props.history.push('/dashboard');
+      .catch(err => {
+        console.error('Closing Poll: ', err);
+      })
     })
     .catch(err => {
-      console.error('Closing Poll: ', err);
+      console.err('getting poll from MongoDB', err);
     })
   }
 
@@ -117,7 +163,7 @@ class Live extends React.Component {
           this.props.history.push('/login');
         }}, 2000);
       return (
-        <div id = "live-view">
+        <div className="live-view">
           <div className = "loading-view">
             <div className = "loading-container">
               <svg className = "loader-rotate" height = "100" width = "100">
@@ -146,45 +192,61 @@ class Live extends React.Component {
           </div>
         </div>
         );
-      return (
-        <div id = "live-view" className="live-view-wrapper" style={{textAlign: "center"}}>
-          <Navbar history = {this.props.history}/>
-          <div className = "live-view-container"> 
-            <h1 className = 'poll-title'>Live View - Poll: {this.state.poll.title}</h1>
-              {this.state.questions.map((q, i, arr) => {
-                let background = q.active ? '$primary' : '$primary-dark';
-                return (
-                  <div className="box" style = {{backgroundColor: background}} key={q.id}>
-                    <h1 className="question-question">Q: {q.question_title}</h1>
-                    <div className = "question-answers-container">
-                      <div className="question-answers">
-                        {q.answers.map(ans => (
-                          <p key={ans.id}>A{ans.position}:   {ans.value}</p>
-                        )
-                          )}
-                      </div>
-                        {
-                          i === arr.length - 1 ? 
-                          <div className = "button-container">
-                            <button className="draw meet id=" onClick={() => this.nextQuestion(i)}>Next Question</button>
-                            <button className="draw meet" id="closePollButton" onClick={this.close}>Close Poll</button>
+        return (
+          <div className="body-wrapper">
+            <div className="container">
+              <Navbar history = {this.props.history}/>
+              <div className="live-view__container"> 
+                <h1 className='live-view__poll-title'>Live Poll: "{this.state.poll.title}"</h1>
+                <div className="u-horizontal-divider u-horizontal-divider--red u-margin-bottom-medium"></div>
+                  {this.state.questions.map((q, i, arr) => {
+                    let border;
+                    if(q.active === true) { border = '2px solid #fbca67'};
+                    return (
+                      <div className="live-view__question-box" style = {{border: border}} key={q.id}>
+                        <div className="live-view__question-title">{q.question_title}</div>
+                        <hr className="hr--solid--red"/>
+                        <div className="live-view__answers-box">
+                          <ul className="live-view__answers-list">
+                            {q.answers.map(ans => {
+                              let resultKey;
+                              let voteCount;
+                              if (this.state.results) {
+                                resultKey = Object.keys(this.state.results).filter((key) => key === ans.id);
+                                voteCount = this.state.results ? this.state.results[ans.id] ? this.state.results[ans.id][0] ? this.state.results[ans.id][0].vote_count : 0 : 0 : 0;
+                              }
+                              return (
+                                <li className = "live-view__answer" key={ans.id}> 
+                                  <div>{ans.value}</div>
+                                  {resultKey ? <div className = "results-bar" key = {resultKey} style = {{width: voteCount/q.total ? `${voteCount/q.total*90 + 10}%` : '10%'}}>{voteCount/q.total ? `${voteCount/q.total*100}%` : '0%'}</div> : <div style = {{width: '5%'}}>0%</div>}
+                                </li>
+                              )
+                            }
+                              )}
+                          </ul>
+                            {q.active === true && i !== arr.length -1 && 
+                              <button className="btn--standard" id="nextQuestionButton" onClick={() => this.nextQuestion(i)}>Next Question</button>
+                            }
+                            {i === arr.length -1 &&
+                            <button className="btn--standard" id="closeQuestionButton" onClick={this.close}>Close Poll</button>
+                            }
                           </div>
-                          :
-                          <button className="draw meet id=" onClick={() => this.nextQuestion(i)}>Next Question</button>
-                        }
                       </div>
-                  </div>
-                )
-              })}
-                {this.state.closed && 
-                  <p className="pollIsClosedAlert" style={{color: "#e83800", fontWeight: "700", margin: "30px auto"}}>This poll is closed!</p>
-                }
+                    )
+                  })}
+                  {this.state.closed && 
+                    <p className="pollIsClosedAlert" style={{color: "#e83800", fontWeight: "700", margin: "30px auto"}}>This poll is now closed!</p>
+                  }
+              </div>
+            </div>
           </div>
-        </div>
-      );
+        );
+  
 
     }
   }
 }
+
+
 
 export default Live;

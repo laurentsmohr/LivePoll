@@ -19,9 +19,9 @@ import * as firebaseui from 'firebaseui';
 var uiConfig = {
   signInSuccessUrl: '/dashboard',
   signInOptions: [
-      firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-      firebase.auth.EmailAuthProvider.PROVIDER_ID,
-  ],
+      firebase.auth.GoogleAuthProvider.PROVIDER_ID
+  ], 
+  signInFlow: "popup"
   // tosUrl: '<your-tos-url>'
 };
 

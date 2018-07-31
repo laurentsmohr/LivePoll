@@ -4,7 +4,7 @@ const pollRouter = require('./routers/pollRouter');
 const resultHistRouter = require('./routers/resultsRouter');
 const stageRouter = require('./routers/stageRouter');
 const notificationsRouter = require('./routers/notificationsRouter');
-const cors = require('cors');
+
 const path = require('path');
 var compression = require('compression');
 require('dotenv').config();
@@ -12,12 +12,6 @@ require('dotenv').config();
 const app = express();
 
 app.use(bodyParser.json());
-
-
-app.use((req, res, next) => {
-  console.log(req.method, req.url);
-  next();
-})
 
 // Serve static files to the client
 app.use(compression({filter: shouldCompress}))

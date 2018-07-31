@@ -24,7 +24,7 @@ firestore.settings(settings);
 
 const firepoll = {}
 
-  firepoll.user = {};
+firepoll.user = {};
 
   firepoll.user.get = (pollId, cb) => {
     return new Promise((resolve, reject) => {
@@ -137,8 +137,6 @@ firepoll.listen = {}
     }
   }
 
-
-
   //listen for changes to question
   firepoll.listen.question = (poll_id, questions, cb) => {
     if (!Array.isArray(questions)) {
@@ -152,6 +150,18 @@ firepoll.listen = {}
         cb(snapShotData);
       });
     }
+  }
+
+  firepoll.listen.results = (poll_id, question_id, cb) => {
+    return realTimeDB.ref(`/polls/${poll_id}/questions/${question_id}/aggregates`)
+    .on('value', (snapshot) => {
+      let results = snapshot.val();
+      let data = [];
+      for (let result in results) {
+        data.push(results[result]);
+      }
+      cb(data, question_id);
+    });
   }
 
 // GET DATA FROM FIRESTORE INTERFACE
